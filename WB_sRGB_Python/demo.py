@@ -1,63 +1,42 @@
-## Demo: White balancing a single image
-#
-# Copyright (c) 2018-present, Mahmoud Afifi
-# York University, Canada
-# mafifi@eecs.yorku.ca | m.3afifi@gmail.com
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-# All rights reserved.
-#
-# Please cite the following work if this program is used:
-# Mahmoud Afifi, Brian Price, Scott Cohen, and Michael S. Brown,
-# "When color constancy goes wrong: Correcting improperly white-balanced
-# images", CVPR 2019.
-#
-##########################################################################
-
+import gradio as gr
 import cv2
-import os
+import numpy as np
 from classes import WBsRGB as wb_srgb
 
-
 def ResizeWithAspectRatio(image, width=None, height=None, inter=cv2.INTER_AREA):
-  (h, w) = image.shape[:2]
+    (h, w) = image.shape[:2]
 
-  if width is None and height is None:
-    return image
-  if width is None:
-    r = height / float(h)
-    dim = (int(w * r), height)
-  else:
-    r = width / float(w)
-    dim = (width, int(h * r))
+    if width is None and height is None:
+        return image
+    if width is None:
+        r = height / float(h)
+        dim = (int(w * r), height)
+    else:
+        r = width / float(w)
+        dim = (width, int(h * r))
 
-  return cv2.resize(image, dim, interpolation=inter)
+    return cv2.resize(image, dim, interpolation=inter)
 
+# Initialize the model with default parameters
+gamut_mapping_default = 2
+upgraded_model_default = 0
+wbModel = wb_srgb.WBsRGB(gamut_mapping=gamut_mapping_default, upgraded=upgraded_model_default)
 
-# input and options
-in_img = '../example_images/figure3.jpg'  # input image filename
-out_dir = '.'  # output directory
-# use upgraded_model= 1 to load our new model that is upgraded with new
-# training examples.
-upgraded_model = 0
-# use gamut_mapping = 1 for scaling, 2 for clipping (our paper's results
-# reported using clipping). If the image is over-saturated, scaling is
-# recommended.
-gamut_mapping = 2
-imshow = 1  # show input/output image
+def white_balance(input_image):
+    I = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)  # Convert to RGB format
+    outImg = wbModel.correctImage(I)  # White balance it
+    result_image = (outImg * 255).astype(np.uint8)
+    result_image = cv2.cvtColor(result_image, cv2.COLOR_RGB2BGR)  # Convert back to BGR format for display
+    return result_image
 
-# processing
-# create an instance of the WB model
-wbModel = wb_srgb.WBsRGB(gamut_mapping=gamut_mapping,
-                         upgraded=upgraded_model)
-os.makedirs(out_dir, exist_ok=True)
-I = cv2.imread(in_img)  # read the image
-outImg = wbModel.correctImage(I)  # white balance it
-cv2.imwrite(out_dir + '/' + 'result.jpg', outImg * 255)  # save it
+# Create Gradio interface
+interface = gr.Interface(
+    fn=white_balance,
+    inputs=gr.Image(type="numpy", label="Input Image"),
+    outputs=gr.Image(type="numpy", label="Output Image"),
+    title="White Balance Correction",
+    description="Upload an image to correct its white balance."
+)
 
-if imshow == 1:
-  cv2.imshow('input', ResizeWithAspectRatio(I, width=600))
-  cv2.imshow('our result', ResizeWithAspectRatio(outImg, width=600))
-  cv2.waitKey()
-  cv2.destroyAllWindows()
+# Launch the interface
+interface.launch()
