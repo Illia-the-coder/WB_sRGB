@@ -34,7 +34,7 @@ interface = gr.Interface(
     fn=white_balance,
     inputs=gr.Image(type="numpy", label="Input Image"),
     outputs=gr.Image(type="numpy", label="Output Image"),
-    title="White Balance Correction",
+    title="WB_sRGB",
     description="Upload an image to correct its white balance."
 )
 
