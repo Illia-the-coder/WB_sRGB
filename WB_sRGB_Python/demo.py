@@ -39,4 +39,4 @@ interface = gr.Interface(
 )
 
 # Launch the interface
-interface.launch()
+interface.launch(share=True)
